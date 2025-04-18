@@ -26,6 +26,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include <Imlib2.h>
 #include <X11/Xlib.h>
@@ -270,16 +271,18 @@ struct opt {
 	char *res_name;
 
 	/* misc flags: */
+	const char *tns_filters;
+	bool tns_filters_is_blacklist;
 	bool quiet;
 	bool thumb_mode;
 	bool clean_cache;
+	bool update_cache;
 	bool private_mode;
-	bool background_cache;
 };
 
 extern const opt_t *options;
 
-void print_usage(void);
+void print_usage(FILE *stream);
 void parse_options(int, char**);
 
 
@@ -292,6 +295,12 @@ typedef struct {
 	int x;
 	int y;
 } thumb_t;
+
+typedef struct {
+	const char *path;
+	int  len;
+	bool recursive;
+} thumb_filter_t;
 
 struct tns {
 	fileinfo_t *files;
@@ -312,7 +321,11 @@ struct tns {
 	int bw;
 	int dim;
 
+	thumb_filter_t *filters;
+	int filters_cnt;
+
 	bool dirty;
+	bool filters_is_blacklist;
 };
 
 void tns_clean_cache(void);

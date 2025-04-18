@@ -908,11 +908,12 @@ int main(int argc, char *argv[])
 	if (options->clean_cache) {
 		tns_init(&tns, NULL, NULL, NULL, NULL);
 		tns_clean_cache();
-		exit(EXIT_SUCCESS);
+		if (!options->update_cache)
+			exit(EXIT_SUCCESS);
 	}
 
 	if (options->filecnt == 0 && !options->from_stdin) {
-		print_usage();
+		print_usage(stderr);
 		exit(EXIT_FAILURE);
 	}
 
@@ -941,21 +942,18 @@ int main(int argc, char *argv[])
 	filecnt = fileidx;
 	fileidx = options->startnum < filecnt ? options->startnum : 0;
 
-	if (options->background_cache && !options->private_mode) {
-		pid_t ppid = getpid(); /* to check if parent is still alive or not */
-		switch (fork()) {
-		case 0:
-			tns_init(&tns, files, &filecnt, &fileidx, NULL);
-			while (filecnt > 0 && getppid() == ppid) {
-				tns_load(&tns, filecnt - 1, false, true);
-				remove_file(filecnt - 1, true);
-			}
-			exit(0);
-			break;
-		case -1:
-			error(0, errno, "fork failed");
-			break;
+	if (options->update_cache) {
+		if (options->private_mode) {
+			error(0, 0, "private mode was enabled, not caching anything");
+			exit(EXIT_SUCCESS);
 		}
+		tns_free(&tns);
+		tns_init(&tns, files, &filecnt, &fileidx, NULL);
+		while (filecnt > 0) {
+			tns_load(&tns, filecnt - 1, false, true);
+			remove_file(filecnt - 1, true);
+		}
+		assert(0 && "unreachable");
 	}
 
 	win_init(&win);
